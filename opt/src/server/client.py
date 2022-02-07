@@ -81,7 +81,7 @@ class ClientThread(threading.Thread):
                 self._send("[DISCONNECT]")
                 sys.exit(1)
 
-    def _recv(self):
+    def _receive(self):
         while self.alive.is_set():
             try:
                 bmsg_size = self.soc.recv(BYTE_SIZE)

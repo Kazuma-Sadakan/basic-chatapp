@@ -13,18 +13,18 @@ from dotenv import load_dotenv
 from opt.src.person import Person
 from opt.src.utils.utils import encode, decode, pickle_dumps, pickle_load
 
+
 load_dotenv(verbose=True)
 BASE_DIR = os.path.dirname(__file__)
 LOGGING_FILE = os.path.join(BASE_DIR, "test.log")
+BUFFER_SIZE = int(os.environ.get("BUFFER_SIZE"))
+REQUEST_SIZE = int(os.environ.get("REQUEST_SIZE"))
+BYTE_SIZE = struct.calcsize("<L")
 
 logging.basicConfig(filename = LOGGING_FILE, level = logging.DEBUG, 
                     format = "%(asctime)s:%(levelname)s:%(message)s")
 
-# Connection Data
 
-BUFFER_SIZE = int(os.environ.get("BUFFER_SIZE"))
-REQUEST_SIZE = int(os.environ.get("REQUEST_SIZE"))
-BYTE_SIZE = struct.calcsize("<L")
 
 class State(Enum):
     CONNECT=0
@@ -76,6 +76,7 @@ class Server(threading.Thread):
     def _accept(self):
         conn, addr = self.socket.accept()
         logging.info(f"{conn}:{addr} is connected")
+        print(f"{conn}:{addr} is connected")
         self.lock.acquire()
         person = Person(conn = conn, addr = addr)
         self.client_list.append(person)
@@ -86,15 +87,10 @@ class Server(threading.Thread):
         self.thread_list[-1].start()
 
     def run(self):
-        print("server1", self.alive.is_set())
         self._listen()
-        print("server2", self.alive.is_set())
         while self.alive.is_set():
-            print("server3", self.alive.is_set())
             try:
                 self._accept()
-                print("server4", self.alive.is_set())
-
             except KeyboardInterrupt:
                 logging.info("KeybortInterrupt. server closed...")
                 self.socket.close()
@@ -120,19 +116,13 @@ class Server(threading.Thread):
                     "timestamp": time.time()
                 }
                 self._send(person, pickle_dumps(response))
-
-            # except IOError as e:
-            #     if e.errno == errno.EPIPE:
-            #         logging.error(f"{conn}:{addr}: BROKEN PIPE")
-            #         conn.close()
-            #         self.clisnt_list.remove(Person(conn, addr))
                     
             if pickle_load(bmsg).get("message", None) == "[DISCONNECTED]":
                 person.conn.close()
                 self.lock.acquire()
                 self.client_list.remove(person)
                 self.lock.release()
-
+            print("person", person)
             self._broadcast(person, bmsg)
 
     def _recv(self, person):
@@ -154,7 +144,6 @@ class Server(threading.Thread):
                 self.lock.release()
                 return ""
 
-        
     def _send(self, person, bmsg):
         data = struct.pack("<L", len(bmsg)) + bmsg
         try:
@@ -168,8 +157,9 @@ class Server(threading.Thread):
 
     def _broadcast(self, person, msg):
         for client in self.client_list[:]:
-            if client == person:
-                continue
+            # if client == person: 
+            #     continue
+            print("client", client, "-->", msg)
             self._send(client, msg)
 
     def join(self):

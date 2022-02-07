@@ -9,13 +9,14 @@ def test_create_clientdb():
 def test_save_client():
     client_db = ClientDB("test_client.db")
     client_db.create_table()
-    client_db.save("Jack", time.time())
+    success = client_db.save("Jack", time.time())
+    assert success == True
 
-# def test_get_by_username():
-#     client_db = ClientDB("test_client.db")
-#     client_db.create_table()
-#     data = client_db.get_by_username("Jack")
-#     assert data["id"] == 1
+def test_get_by_username():
+    client_db = ClientDB("test_client.db")
+    client_db.create_table()
+    data = client_db.get_by_username("Jack")
+    assert data["id"] == 1
 
 def test_delete():
     client_db = ClientDB("test_client.db")
@@ -73,14 +74,12 @@ def test_save_message():
     client_db.save("Dean", time.time())
     id = client_db.get_by_username("Dean")["id"]
     success = message_db.save(id, "hello world", time.time())
-    assert success == True
-    
+    assert success == True  
 
 def test_get_message():
     message_db = MessageDB("test_message.db")
     message_db.create_table()
     data = message_db.get()
-
 
 def test_get_message_by_client_id():
     message_db = MessageDB("test_message.db")

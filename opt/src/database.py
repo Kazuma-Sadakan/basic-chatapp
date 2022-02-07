@@ -5,9 +5,14 @@ import os
 basedir  = os.path.abspath(os.path.dirname(__file__))
 
 import os, time
+import datetime
 import sqlite3
 
 BASE_URL = os.path.dirname(__file__)
+
+def time_converter(timestamp):
+    return str(datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S"))
+
 class Database:
     def __init__(self, db_name:str):
         db_path = os.path.join(BASE_URL, db_name)
@@ -60,6 +65,7 @@ class ClientDB(Database):
         self.connect.commit()
 
     def save(self, username:str, timestamp:str = time.time()):
+        timestamp = time_converter(timestamp)
         try:
             self.cursor.execute("""
                 INSERT INTO client (username, timestamp) VALUES (:username, :timestamp)
@@ -69,7 +75,6 @@ class ClientDB(Database):
         except Exception as e:
             logging.error(e)
             return False 
-
 
     def update(self, id:int, username:str) -> bool:
         try:
@@ -95,26 +100,45 @@ class ClientDB(Database):
             return False
 
     def get(self, id:int) -> dict:
-        self.cursor.execute("""
-            SELECT id, username, timestamp FROM client WHERE id = :id
-        """, {"id": id})
-        client = self.cursor.fetchone()
-        return {"id": client[0], "username": client[1], "timestamp": client[2]}
+        try:
+            self.cursor.execute("""
+                SELECT id, username, timestamp FROM client WHERE id = :id
+            """, {"id": id})
+            client = self.cursor.fetchone()
+            if client is None:
+                return {}
+            return {"id": client[0], "username": client[1], "timestamp": client[2]}
+        except Exception as e:
+            logging.error(e)
+            return {}
 
     def get_all(self) -> list:
-        self.cursor.execute("""
-            SELECT id, username, timestamp FROM client
-        """)
-        return [{"id": client[0], "username": client[1], "timestamp": client[2]}for client in self.cursor.fetchall()]
-    
+        try:
+            self.cursor.execute("""
+                SELECT id, username, timestamp FROM client
+            """)
+            client_list = self.cursor.fetchall()
+            if not bool(client_list):
+                return []
+            return [{"id": client[0], "username": client[1], "timestamp": client[2]}for client in client_list]
+        except Exception as e:
+            logging.error(e)
+            return []
+
     def get_by_username(self, username:str) -> dict:
-        self.cursor.execute("""
-            SELECT id, username, timestamp FROM client WHERE username = :username
-        """, {"username": username})
-        client = self.cursor.fetchone()
-        return {"id": client[0],
-                "username": client[1], 
-                "timestamp": client[2]}
+        try:
+            self.cursor.execute("""
+                SELECT id, username, timestamp FROM client WHERE username = :username
+            """, {"username": username})
+            client = self.cursor.fetchone()
+            if client is None:
+                return {}
+            return {"id": client[0],
+                    "username": client[1], 
+                    "timestamp": client[2]}
+        except Exception as e:
+            logging.error(e)
+            return {}
 
     def delete_all(self) -> bool:
         try:
@@ -147,6 +171,7 @@ class MessageDB(Database):
 
     def save(self, client_id:int, message:str, timestamp:str) -> bool:
         try:
+            timestamp = time_converter(timestamp)
             self.cursor.execute("""
                 INSERT INTO messages (msg, client_id, timestamp) VALUES (:msg, :client_id, :timestamp)
             """, {"msg": message, 'client_id': client_id, "timestamp": timestamp})
@@ -157,22 +182,43 @@ class MessageDB(Database):
             return False
 
     def get(self) -> dict:
-        self.cursor.execute("""
-            SELECT msg, timestamp FROM messages
-        """)
-        message_list = self.cursor.fetchall()
-        return [{"msg": message[0], "timestamp": message[1]} for message in message_list]
+        try:
+            self.cursor.execute("""
+                SELECT msg, timestamp FROM messages
+            """)
+            message_list = self.cursor.fetchall()
+            if not bool(message_list):
+                return []
+            return [{"msg": message[0], "timestamp": message[1]} for message in message_list]
+        except Exception as e:
+            logging.error(e)
+            return []
 
     def get_by_id(self, client_id:int) -> list:
-        self.cursor.execute("""
-            SELECT msg, timestamp FROM messages WHERE client_id = :client_id ORDER BY timestamp
-        """, {"client_id": client_id})
-        return [{"msg": data[0], "timestamp": data[1]} for data in self.cursor.fetchall()]
+        try:
+            self.cursor.execute("""
+                SELECT msg, timestamp FROM messages WHERE client_id = :client_id ORDER BY timestamp
+            """, {"client_id": client_id})
+            message_list = self.cursor.fetchall()
+            if not bool(message_list):
+                return []
+            return [{"msg": data[0], "timestamp": data[1]} for data in message_list]
+        except Exception as e:
+            logging.error(e)
+            return []
 
     def get_all(self) -> list:
-        self.cursor.execute("""
-            SELECT msg, timestamp FROM messages ORDER BY timestamp
-        """)
-        return [{"msg": data[0], "timestamp": data[1]} for data in self.cursor.fetchall()]
+        try:
+            self.cursor.execute("""
+                SELECT msg, timestamp FROM messages ORDER BY timestamp
+            """)
+            message_list = self.cursor.fetchall()
+            if not bool(message_list):
+                return []
+            return [{"msg": data[0], "timestamp": data[1]} for data in message_list]
+        except Exception as e:
+            logging.error(e)
+            return []
+        
 
 
